@@ -1,0 +1,251 @@
+<html>
+    <head>
+        <title>Three.js Material Test</title>
+        <style>canvas { width: 100%; height: 100% }</style>
+    </head>
+    <body>
+    <script src="three.js"></script>
+    <script src="jquery-2.0.3.min.js"></script>
+    <script>
+
+    try{
+
+        //keypresses
+        var W_Down = false;
+        var A_Down = false;
+        var S_Down = false;
+        var D_Down = false;
+        var Q_Down = false;
+        var E_Down = false;
+        var Control_Down = false;
+        var Space_Down = false;
+
+        //initialize scene and camera
+        var scene = new THREE.Scene;
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        //selecting a renderer to use
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.physicallyBasedShading = true;
+
+
+        //try a material
+
+        // material parameters
+        var ambient = 0x111111, diffuse = 0xbbbbbb, specular = 0x060606, shininess = 35;
+        var shader = THREE.ShaderLib[ "normalmap" ];
+
+        var DisplacementTexture = new THREE.ImageUtils.loadTexture("Textures/cobblestone_height.png");
+        var DiffuseTexture = new THREE.ImageUtils.loadTexture("Textures/cobblestone.jpg");
+        var NormalTexture = new THREE.ImageUtils.loadTexture("Textures/cobblestone_normal.png")
+
+        var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+        uniforms[ "enableDisplacement" ].value = true;
+        uniforms[ "enableDiffuse" ].value = true;
+        uniforms[ "tDisplacement"].value = DisplacementTexture;
+        uniforms[ "tDiffuse" ].value = DiffuseTexture;
+        uniforms[ "tNormal" ].value = NormalTexture;
+        uniforms[ "uDisplacementScale" ].value = 1;
+        var parameters = { fragmentShader: shader.fragmentShader, vertexShader: shader.vertexShader, uniforms: uniforms, lights: true };
+        var NormalMaterial = new THREE.ShaderMaterial( parameters );
+        NormalMaterial.wrapAround = true;
+        
+        
+
+        var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        var sphereMaterial = new THREE.MeshLambertMaterial({color: 0x00ff00});
+
+        //make a cube
+        var geometry = new THREE.PlaneGeometry(16,16,128,128);
+        geometry.computeTangents();
+        var plane = new THREE.Mesh( geometry, NormalMaterial);
+        scene.add(plane);
+
+        camera.position.z = 10;
+
+        // create a point light
+        //var pointLight = new THREE.PointLight(0xFFFFFF);
+        //pointLight.position.x = 10;
+        //pointLight.position.y = 50;
+        //pointLight.position.z = 10;
+        //scene.add(pointLight);
+
+        var spotLight = new THREE.SpotLight( 0xffffff );
+        spotLight.angle = Math.PI / 2;
+        spotLight.position.set( 100, 1000, 100 );
+        spotLight.castShadow = true;
+        spotLight.shadowMapWidth = 1024;
+        spotLight.shadowMapHeight = 1024;
+        spotLight.shadowCameraNear = 500;
+        spotLight.shadowCameraFar = 4000;
+        spotLight.shadowCameraFov = 30;
+        //scene.add( spotLight );
+
+        ambientLight = new THREE.AmbientLight( 0x444444 );
+        //scene.add( ambientLight );
+
+        pointLight = new THREE.PointLight( 0xffffff, 1.25, 25 );
+        pointLight.position.set( 0, 0, 10 );
+        scene.add( pointLight );
+
+        directionalLight = new THREE.DirectionalLight( 0xffffff );
+        directionalLight.position.set( 1, -0.5, -1 );
+        //scene.add( directionalLight );
+
+        function render () {
+            try{
+                //camera movement code
+                if(Q_Down){
+                    //rotate left
+                    camera.rotation.y += 0.05;
+                }
+                if(E_Down){
+                    //rotate right
+                    camera.rotation.y -= 0.05;
+                }
+                if(W_Down){
+                    var forwardVector = new THREE.Vector3(0, 0, -0.1);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(S_Down){
+                    var forwardVector = new THREE.Vector3(0, 0, 0.1);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(A_Down){
+                    var forwardVector = new THREE.Vector3(-0.1, 0, 0);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(D_Down){
+                    var forwardVector = new THREE.Vector3(0.1, 0, 0);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(Space_Down){
+                    camera.position.y += 0.1;
+                }
+                if(Control_Down){
+                    camera.position.y -= 0.1;
+                }
+
+                //moving the pointlight in a circle
+                var timer = -0.001 * Date.now();
+                pointLight.position.x = 20 * Math.cos( timer );
+                pointLight.position.z = 20 * Math.sin( timer );
+
+            }
+            catch(Error){
+                alert(Error);
+            }
+            
+
+            requestAnimationFrame(render);
+            //cube.rotation.x += 0.01; cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        render();
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+
+        }
+
+        function onDocumentKeyDown( event ) {
+            switch( event.keyCode ) {
+                case 87: //'w'
+                    W_Down = true;
+                    break;
+                case 65: //'a'
+                    A_Down = true;
+                    break;
+                case 83: //'s'
+                    S_Down = true;
+                    break;
+                case 68: //'d'
+                    D_Down = true;
+                    break;
+                case 81: //'q'
+                    Q_Down = true;
+                    break;
+                case 69: //'e'
+                    E_Down = true;
+                    break;
+                case 32: //' '
+                    Space_Down = true;
+                    break;
+                case 17: //'left control'
+                    Control_Down = true;
+                    break;
+            }
+        }
+
+        function onDocumentKeyUp( event ) {
+            switch( event.keyCode ) {
+                case 87: //'w'
+                    W_Down = false;
+                    break;
+                case 65: //'a'
+                    A_Down = false;
+                    break;
+                case 83: //'s'
+                    S_Down = false;
+                    break;
+                case 68: //'d'
+                    D_Down = false;
+                    break;
+                case 81: //'q'
+                    Q_Down = false;
+                    break;
+                case 69: //'e'
+                    E_Down = false;
+                    break;
+                case 32: //' '
+                    Space_Down = false;
+                    break;
+                case 17: //'left control'
+                    Control_Down = false;
+                    break;
+            }
+        }
+
+        //preventing ctrl + char shortcuts
+        onkeydown = function(e){
+        if(e.ctrlKey){
+            e.preventDefault();
+            //your saving code
+            }
+        }
+
+
+
+        //listeners for events
+        window.addEventListener( 'resize', onWindowResize, false );
+        document.addEventListener( 'keydown', onDocumentKeyDown, false );
+        document.addEventListener( 'keyup', onDocumentKeyUp, false );
+
+    }
+    catch(Error){
+        alert(Error);
+    }
+    
+
+    </script>
+</body>
+</html>

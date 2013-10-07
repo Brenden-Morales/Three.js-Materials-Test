@@ -1,0 +1,1 @@
+This simple Three.js program creates a material that has a normal map, a diffuse map and a displacement map.
